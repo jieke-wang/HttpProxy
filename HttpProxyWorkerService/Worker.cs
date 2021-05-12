@@ -16,22 +16,26 @@ namespace HttpProxyWorkerService
 {
     public class Worker : BackgroundService
     {
+        private CookieContainer _cookieContainer;
         private HttpListener _listener;
         private readonly ILogger<Worker> _logger;
 
         public Worker(ILogger<Worker> logger)
         {
             _logger = logger;
+            _cookieContainer = new CookieContainer();
         }
 
         public override Task StartAsync(CancellationToken cancellationToken)
         {
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls13 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11;
-            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            //ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls13 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11;
+            //ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 
             _listener = new HttpListener();
             _listener.Prefixes.Add("http://127.0.0.1:8888/");
             _listener.Start();
+
+            Console.WriteLine($"开始监听: {string.Join("; ", _listener.Prefixes)}");
 
             return base.StartAsync(cancellationToken);
         }
@@ -68,14 +72,31 @@ namespace HttpProxyWorkerService
             HttpListenerRequest request = ctx.Request;
             HttpListenerResponse response = ctx.Response;
 
-            const string protocol = "https";
-            const string host = "www.baidu.com";
+            Console.WriteLine(request.RawUrl);
 
-            //const string protocol = "http";
-            //const string host = "www.kaifenginternet.com";
+            #region 代理设置
+            //const string protocol = "https";
+            //const string host = "www.runoob.com";
 
-            RestClient proxyClient = new RestClient($"{protocol}://{host}");
-            RestRequest proxyRequest = new RestRequest(request.RawUrl, Enum.Parse<Method>(request.HttpMethod, true));
+            //const string protocol = "https";
+            //const string host = "www.zhihu.com";
+
+            //const string protocol = "https";
+            //const string host = "www.cnblogs.com";
+
+            //const string protocol = "https";
+            //const string host = "www.baidu.com";
+
+            const string protocol = "http";
+            const string host = "www.kaifenginternet.com";
+            #endregion
+
+            RestClient proxyClient = new RestClient($"{protocol}://{host}")
+            {
+                RemoteCertificateValidationCallback = delegate { return true; },
+                CookieContainer = _cookieContainer,
+            };
+            RestRequest proxyRequest = new RestRequest(request.RawUrl.TrimStart('/'), Enum.Parse<Method>(request.HttpMethod, true));
             foreach (var header in request.Headers.AllKeys)
             {
                 if (string.Equals(header, "Host", StringComparison.OrdinalIgnoreCase))
@@ -86,10 +107,10 @@ namespace HttpProxyWorkerService
                 proxyRequest.AddHeader(header, request.Headers.Get(header));
             }
 
-            foreach (Cookie cookie in request.Cookies)
-            {
-                proxyRequest.AddCookie(cookie.Name, cookie.Value);
-            }
+            //foreach (Cookie cookie in request.Cookies)
+            //{
+            //    proxyRequest.AddCookie(cookie.Name, cookie.Value);
+            //}
 
             if (string.Equals(request.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase) == false && request.ContentLength64 > 0)
             {
@@ -101,31 +122,37 @@ namespace HttpProxyWorkerService
             IRestResponse proxyResponse = await proxyClient.ExecuteAsync(proxyRequest, stoppingToken);
             foreach (var header in proxyResponse.Headers)
             {
+                if (string.Equals(header.Name, "Content-Length", StringComparison.OrdinalIgnoreCase)) continue;
                 response.AddHeader(header.Name, Convert.ToString(header.Value));
             }
 
-            foreach (var cookie in proxyResponse.Cookies)
-            {
-                response.Cookies.Add(new Cookie(cookie.Name, cookie.Value, cookie.Path, cookie.Domain) 
-                {
-                    Secure = cookie.Secure,
-                    Port = cookie.Port,
-                    HttpOnly = cookie.HttpOnly,
-                    Expires = cookie.Expires,
-                    Discard = cookie.Discard,
-                    CommentUri = cookie.CommentUri,
-                    Comment = cookie.Comment,
-                    Expired = cookie.Expired,
-                    Version = cookie.Version
-                });
-            }
+            //foreach (var cookie in proxyResponse.Cookies)
+            //{
+            //    response.Cookies.Add(new Cookie(cookie.Name, cookie.Value, cookie.Path, cookie.Domain) 
+            //    {
+            //        Secure = cookie.Secure,
+            //        Port = cookie.Port,
+            //        HttpOnly = cookie.HttpOnly,
+            //        Expires = cookie.Expires,
+            //        Discard = cookie.Discard,
+            //        CommentUri = cookie.CommentUri,
+            //        Comment = cookie.Comment,
+            //        Expired = cookie.Expired,
+            //        Version = cookie.Version
+            //    });
+            //}
 
             response.StatusCode = (int)proxyResponse.StatusCode;
             response.ProtocolVersion = proxyResponse.ProtocolVersion;
-            if(proxyResponse.RawBytes?.Length > 0)
+            response.ContentType = proxyResponse.ContentType;
+            //response.ContentLength64 = proxyResponse.ContentLength;
+            if (proxyResponse.RawBytes?.Length > 0)
             {
-                using MemoryStream ms = new MemoryStream(proxyResponse.RawBytes);
-                await ms.CopyToAsync(response.OutputStream);
+                //using MemoryStream ms = new MemoryStream(proxyResponse.RawBytes);
+                //ms.Seek(0, SeekOrigin.Begin);
+                //await ms.CopyToAsync(response.OutputStream);
+                ReadOnlyMemory<byte> rawBytes = new ReadOnlyMemory<byte>(proxyResponse.RawBytes);
+                await response.OutputStream.WriteAsync(rawBytes, stoppingToken);
             }
 
             response.Close();
