@@ -29,8 +29,8 @@ namespace HttpProxyWorkerService
 
         public override Task StartAsync(CancellationToken cancellationToken)
         {
-            //ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls13 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11;
-            //ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls13 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11;
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 
             _listener = new HttpListener();
             _listener.Prefixes.Add("http://127.0.0.1:8888/");
@@ -47,11 +47,11 @@ namespace HttpProxyWorkerService
             {
                 HttpListenerContext ctx = await _listener.GetContextAsync();
                 //await ProcessAsync(ctx);
-                if(ctx.Request.IsWebSocketRequest)
-                {
-                    await ProcessWebSocketAsync(ctx, stoppingToken);
-                }
-                else
+                //if(ctx.Request.IsWebSocketRequest)
+                //{
+                //    await ProcessWebSocketAsync(ctx, stoppingToken);
+                //}
+                //else
                 {
                     await Process2Async(ctx, stoppingToken);
                 }
@@ -92,25 +92,26 @@ namespace HttpProxyWorkerService
             //const string protocol = "https";
             //const string host = "www.cnblogs.com";
 
-            //const string protocol = "https";
-            //const string host = "www.baidu.com";
+            const string protocol = "http";
+            const string host = "www.baidu.com";
 
             //const string protocol = "http";
             //const string host = "www.kaifenginternet.com";
 
             //const string protocol = "https";
             //const string host = "www.bing.com";
-
-            const string protocol = "http";
-            const string host = "appnode.emsjxg.com";
             #endregion
 
-            RestClient proxyClient = new RestClient($"{protocol}://{host}")
+            string proxyBaseUrl = $"{protocol}{Uri.SchemeDelimiter}{host}";
+            RestClient proxyClient = new RestClient(proxyBaseUrl)
             {
                 RemoteCertificateValidationCallback = delegate { return true; },
                 CookieContainer = _cookieContainer,
+                FollowRedirects = true,
             };
             RestRequest proxyRequest = new RestRequest(request.RawUrl.TrimStart('/'), Enum.Parse<Method>(request.HttpMethod, true));
+
+            string originalBaseUrl = $"{request.Url.Scheme}{Uri.SchemeDelimiter}{request.Url.Authority}";
             foreach (var header in request.Headers.AllKeys)
             {
                 if (string.Equals(header, "Host", StringComparison.OrdinalIgnoreCase))
@@ -118,6 +119,13 @@ namespace HttpProxyWorkerService
                     proxyRequest.AddHeader("Host", host);
                     continue;
                 }
+                else if(string.Equals(header, "Origin", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(header, "Referer", StringComparison.OrdinalIgnoreCase))
+                {
+                    proxyRequest.AddHeader(header, request.Headers.Get(header).Replace(originalBaseUrl, proxyBaseUrl, StringComparison.OrdinalIgnoreCase));
+                    continue;
+                }
+
                 proxyRequest.AddHeader(header, request.Headers.Get(header));
             }
 
