@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpProxy", "HttpProxy\HttpProxy.csproj", "{C05519F5-6901-41BD-853F-520441523EB5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpProxyWorkerService", "HttpProxyWorkerService\HttpProxyWorkerService.csproj", "{73C2CC03-2286-414C-9A01-6EE3FC9D7B3E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HttpProxyWorkerService", "HttpProxyWorkerService\HttpProxyWorkerService.csproj", "{73C2CC03-2286-414C-9A01-6EE3FC9D7B3E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocketClientWorkerService", "WebSocketClientWorkerService\WebSocketClientWorkerService.csproj", "{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,18 @@ Global
 		{73C2CC03-2286-414C-9A01-6EE3FC9D7B3E}.Release|x64.Build.0 = Release|Any CPU
 		{73C2CC03-2286-414C-9A01-6EE3FC9D7B3E}.Release|x86.ActiveCfg = Release|Any CPU
 		{73C2CC03-2286-414C-9A01-6EE3FC9D7B3E}.Release|x86.Build.0 = Release|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Debug|x64.Build.0 = Debug|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Debug|x86.Build.0 = Debug|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Release|x64.ActiveCfg = Release|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Release|x64.Build.0 = Release|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Release|x86.ActiveCfg = Release|Any CPU
+		{2CAE72A1-E9AE-4F2F-B5AA-28744E53DE85}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

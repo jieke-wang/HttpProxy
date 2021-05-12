@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,7 +47,14 @@ namespace HttpProxyWorkerService
             {
                 HttpListenerContext ctx = await _listener.GetContextAsync();
                 //await ProcessAsync(ctx);
-                await Process2Async(ctx, stoppingToken);
+                if(ctx.Request.IsWebSocketRequest)
+                {
+                    await ProcessWebSocketAsync(ctx, stoppingToken);
+                }
+                else
+                {
+                    await Process2Async(ctx, stoppingToken);
+                }
             }
         }
 
@@ -87,8 +95,14 @@ namespace HttpProxyWorkerService
             //const string protocol = "https";
             //const string host = "www.baidu.com";
 
+            //const string protocol = "http";
+            //const string host = "www.kaifenginternet.com";
+
+            //const string protocol = "https";
+            //const string host = "www.bing.com";
+
             const string protocol = "http";
-            const string host = "www.kaifenginternet.com";
+            const string host = "appnode.emsjxg.com";
             #endregion
 
             RestClient proxyClient = new RestClient($"{protocol}://{host}")
@@ -158,6 +172,47 @@ namespace HttpProxyWorkerService
             response.Close();
         }
 
+        private async Task ProcessWebSocketAsync(HttpListenerContext ctx, CancellationToken stoppingToken)
+        {
+            HttpListenerWebSocketContext webSocketContext;
+            try
+            {
+                webSocketContext = await ctx.AcceptWebSocketAsync(default);
+                //Console.WriteLine($"连接地址: {webSocketContext.WebSocket}");
+            }
+            catch (Exception ex)
+            {
+                ctx.Response.StatusCode = 400;
+                ctx.Response.Close();
+                _logger.LogError(ex, ex.Message);
+                return;
+            }
+
+            using WebSocket webSocket = webSocketContext.WebSocket;
+            try
+            {
+                byte[] reciveBuffer = new byte[1024];
+                while (webSocket.State == WebSocketState.Open)
+                {
+                    WebSocketReceiveResult webSocketReceiveResult = await webSocket.ReceiveAsync(reciveBuffer, stoppingToken);
+
+                    if(webSocketReceiveResult.MessageType == WebSocketMessageType.Close)
+                    {
+                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, stoppingToken);
+                    }
+                    else
+                    {
+                        await webSocket.SendAsync(new ArraySegment<byte>(reciveBuffer, 0, webSocketReceiveResult.Count), WebSocketMessageType.Binary, webSocketReceiveResult.EndOfMessage, stoppingToken);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                return;
+            }
+        }
+
         public override Task StopAsync(CancellationToken cancellationToken)
         {
             _listener.Stop();
@@ -175,3 +230,4 @@ namespace HttpProxyWorkerService
 // https://blog.csdn.net/sc9018181134/article/details/82055225
 
 // https://blog.csdn.net/starfd/article/details/86508581
+// https://www.c-sharpcorner.com/UploadFile/bhushanbhure/websocket-server-using-httplistener-and-client-with-client/
