@@ -19,7 +19,17 @@ namespace HttpProxy
             };
             Console.WriteLine("Ctrl + c exit");
 
-            await HttpListenerAsync(cancellationToken, "http://localhost:5000/");
+            //await HttpListenerAsync(cancellationToken, "http://localhost:5000/");
+            //await HttpListenerAsync(cancellationToken, "http://127.0.0.1:5000/");
+            //await HttpListenerAsync(cancellationToken, "http://192.168.199.101:5000/");
+            await HttpListenerAsync(cancellationToken, "http://*:5000/");
+            // netsh http add urlacl url=http://*:5123/  user=Everyone
+
+            #region
+            // HttpListener Start 拒绝访问 https://www.cnblogs.com/qinghub/p/5603659.html
+            // C#Http 服务器报 HttpListener 拒绝访问异常解决方法 https://blog.csdn.net/swordsf/article/details/77413738
+            // HttpListener,调用Start()方法会出现“拒绝访问”异常，如何解决？https://social.msdn.microsoft.com/Forums/ie/zh-CN/752ec611-40cc-4fe4-882e-8adc5a4bd3ac/httplistener3584329992start260412786120250209862961682202529832477
+            #endregion
         }
 
         static async Task HttpListenerAsync(CancellationToken cancellationToken, params string[] prefixes)
